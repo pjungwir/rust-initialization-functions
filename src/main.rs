@@ -1,7 +1,6 @@
 extern crate postgres;
 #[macro_use]
 extern crate chan;
-extern crate chan_signal;
 
 use std::io::prelude::*;
 use std::io;
@@ -13,16 +12,13 @@ use postgres::tls::openssl::OpenSsl;
 use postgres::types::ToSql;
 use postgres::transaction::Transaction;
 use postgres::stmt::Statement;
-use chan_signal::Signal;
 use std::env;
 
 fn main() {
   let mut log = open_log();
-  let db = make_db_connection();
+  let conn = make_db_connection();
+  let db = make_app_db(&conn);
   
-  // Commit the tx if we get these signals:
-  let signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
-
   do_the_work(&mut log, &db);
 }
 
@@ -31,25 +27,24 @@ fn do_the_work<W: Write>(mut log: W, db: &MyAppDb) {
 }
 
 pub struct MyAppDb<'a> {
-  pub conn: Connection,
   pub insert_user: Statement<'a>,
   pub insert_order: Statement<'a>,
   // ... etc ...
 }
 
-// This doesn't compile,
-// but I wish it did!
-fn make_db_connection() -> MyAppDb {
+fn make_db_connection() -> Connection {
   let negotiator = OpenSsl::new().unwrap();   // Can't go out of scope---and we don't even use it all the time!
   let url = env::var("MYAPP_DATABASE").unwrap_or("postgres://myapp_test:secret@localhost:5432/myapp_test".to_owned());
   let tls = if url.contains("@localhost") { TlsMode::None }
             else { TlsMode::Require(&negotiator) };
-  let conn = Connection::connect(url, tls).expect("Can't connect to Postgres");
+  Connection::connect(url, tls).expect("Can't connect to Postgres")
+}
+
+fn make_app_db(conn: &Connection) -> MyAppDb {
   let insert_user = conn.prepare("INSERT INTO users VALUES ($1, $2)").unwrap();
   let insert_order = conn.prepare("INSERT INTO orders VALUES ($1, $2)").unwrap();
 
   MyAppDb {
-    conn: conn,   // Can't move it because other things have references to it.
     insert_user: insert_user,
     insert_order: insert_order,
   }
