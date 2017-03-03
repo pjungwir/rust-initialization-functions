@@ -1,0 +1,9 @@
+[package]
+name = "initialization-functions"
+version = "0.1.0"
+authors = ["Paul A. Jungwirth <pj@illuminatedcomputing.com>"]
+
+[dependencies]
+postgres = {version="0.13", features=["with-time", "with-chrono", "with-openssl"]}
+chan = "0.1.19"
+chan-signal = "0.2.0"
