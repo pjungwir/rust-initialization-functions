@@ -5,4 +5,5 @@ The `master` branch compiles. (It fails to connect to a database, and it would p
 
 The `i_wish` branch shows what I'd like to have, but it doesn't compile.
 
+I am using Rust 1.15.1.
 
